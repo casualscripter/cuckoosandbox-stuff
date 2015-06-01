@@ -1,0 +1,138 @@
+#!/bin/bash
+#===============================================================================
+# FILE:         /usr/local/bin/disable_internet_access_for_vboxnet0
+#
+# USAGE:        # disable_internet_access_for_vboxnet0
+#   OR          $ sudo disable_internet_access_for_vboxnet0
+# OPTIONS:      none
+#
+# DESCRIPTION:  Delete all firewall rules that have been configured by the
+#                 script "enable_internet_access_for_vboxnet0".
+#                 (Hopefully no more, no less!)
+#
+# REQUIREMENTS: coreutils (id and echo), grep, iproute2 (ip), gawk or mawk,
+#                 and iptables
+# BUGS:         ---
+# NOTES:        ---
+# AUTHOR:       Patrick Neumann, patrick@neumannsland.de
+# COMPANY:      (privately)
+#
+# VERSION:      0.6 (beta)
+# CREATED:      27.05.2015
+#
+# COPYRIGHT:	---
+# LICENSE:	---
+#
+# HISTORY:      0.6 - Patrick Neumann - Initial release
+#===============================================================================
+
+#=== FUNCTION ==================================================================
+# NAME: error
+# DESCRIPTION: Display red error messages surrounded by "Error" and "EXITING".
+# PARAMETER 1: message (string)
+#===============================================================================
+function error () {
+  /bin/echo -e "\033[01;31mError: ${1} . . . EXITING ! ! !\033[01;00m"
+}
+
+#-------------------------------------------------------------------------------
+# Check, for root privileges.
+#-------------------------------------------------------------------------------
+if [[ 0 -ne "$( /usr/bin/id --user )" ]] ; then
+  error "you need to be root"
+  exit 1
+fi
+
+#=== FUNCTION ==================================================================
+# NAME: hint
+# DESCRIPTION: Display yellow hint messages starting with "Hint:".
+# PARAMETER 1: message (string)
+#===============================================================================
+function hint () {
+  /bin/echo -e "\033[01;33mHint: ${1}.\033[01;00m"
+}
+
+#=== FUNCTION ==================================================================
+# NAME: success
+# DESCRIPTION: Display green success messages with an ending "!".
+# PARAMETER 1: message (string)
+#===============================================================================
+function success () {
+  /bin/echo -e "\033[01;32m${1}!\033[01;00m"
+}
+
+#-------------------------------------------------------------------------------
+# Delete first firewall rule(s) (if present).
+#-------------------------------------------------------------------------------
+# 0 0 ACCEPT all -- vboxnet0 eth0 192.168.56.0/24 0.0.0.0/0 ctstate NEW
+readonly REGEXP1="ACCEPT.*all.*vboxnet0.*192\.168\.56\.0/24.*0\.0\.0\.0/0.*ctstate NEW"
+readonly NICS="$( /sbin/iptables --table filter --list FORWARD --numeric --verbose \
+                  | grep --extended-regexp "${REGEXP1}" \
+                  | /usr/bin/awk '{ print $7; }' )"
+if [[ -n "${NICS}" ]] ; then
+  for nic in ${NICS} ; do
+    /sbin/iptables --delete FORWARD \
+             --out-interface "${nic}" \
+             --in-interface vboxnet0 \
+             --source 192.168.56.0/24 \
+             --match conntrack \
+             --ctstate NEW \
+             --jump ACCEPT
+  done
+else
+  hint "rule1 not found"
+fi
+
+#-------------------------------------------------------------------------------
+# Delete second firewall rule(s) (if present).
+#-------------------------------------------------------------------------------
+# 0 0 ACCEPT all -- * * 0.0.0.0/0 0.0.0.0/0 ctstate RELATED,ESTABLISHED
+readonly REGEXP2="ACCEPT.*all.*(0\.0\.0\.0/0.*){2}ctstate RELATED,ESTABLISHED"
+rule2="0"
+while /sbin/iptables --table filter --list FORWARD --numeric --verbose \
+      | grep --extended-regexp "${REGEXP2}" \
+      > /dev/null 2>&1 ; do
+  /sbin/iptables --delete FORWARD \
+           --match conntrack \
+           --ctstate ESTABLISHED,RELATED \
+           --jump ACCEPT
+  rule2="1"
+done
+if [[ 0 -eq "${rule2}" ]] ; then
+  hint "rule2 not found"
+fi
+
+#-------------------------------------------------------------------------------
+# Delete third firewall rule(s) (if present).
+#-------------------------------------------------------------------------------
+# 0 0 MASQUERADE all -- * * 0.0.0.0/0 0.0.0.0/0
+readonly REGEXP3="MASQUERADE.*all(.*0\.0\.0\.0/0){2}"
+rule3="0"
+while /sbin/iptables --table nat --list POSTROUTING --numeric --verbose \
+      | grep --extended-regexp "${REGEXP3}" \
+      > /dev/null 2>&1 ; do
+  /sbin/iptables --delete POSTROUTING \
+           --table nat \
+           --jump MASQUERADE
+  rule3="1"
+done
+if [[ 0 -eq "${rule3}" ]] ; then
+  hint "rule3 not found"
+fi
+
+#-------------------------------------------------------------------------------
+# Deactivating ip forwarding (if active).
+#-------------------------------------------------------------------------------
+if [[ 1 -eq "$( cat /proc/sys/net/ipv4/ip_forward )" ]] ; then
+  /bin/echo 0 > /proc/sys/net/ipv4/ip_forward
+else
+  hint "ip-forwarding already disabled"
+fi
+
+#-------------------------------------------------------------------------------
+# If the script reaches this point, everything is good!
+#   (Otherwise read the error messages!)
+#-------------------------------------------------------------------------------
+success "Internet access for vboxnet0 was successfully disabled"
+
+exit 0
