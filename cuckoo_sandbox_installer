@@ -42,7 +42,7 @@
 # LINK TO THE MOST CURRENT VERSION:
 #   https://raw.githubusercontent.com/casualscripter/cuckoosandbox-stuff/master/cuckoo_sandbox_installer
 #
-## CREATED:
+# CREATED:
 #   28.05.2015
 #
 # COPYRIGHT (C):
@@ -415,13 +415,15 @@ fi
 #-------------------------------------------------------------------------------
 /bin/mkdir --parents ~/Downloads/CuckooSandboxStuff
 cd ~/Downloads/CuckooSandboxStuff
-/usr/bin/wget http://tinyurl.com/eiafv0
-/bin/cp eiafv0 /usr/local/bin/enable_internet_access_for_vboxnet0
+/usr/bin/wget https://raw.githubusercontent.com/casualscripter/cuckoosandbox-stuff/master/usr/local/bin/enable_internet_access_for_vboxnet0
+/bin/cp enable_internet_access_for_vboxnet0 \
+        /usr/local/bin/enable_internet_access_for_vboxnet0
 /bin/chown root:root /usr/local/bin/enable_internet_access_for_vboxnet0
 /bin/chmod 755 /usr/local/bin/enable_internet_access_for_vboxnet0
 
-/usr/bin/wget http://tinyurl.com/oywwppj
-/bin/cp nkvsqeg /usr/local/bin/disable_internet_access_for_vboxnet0
+/usr/bin/wget https://raw.githubusercontent.com/casualscripter/cuckoosandbox-stuff/master/usr/local/bin/disable_internet_access_for_vboxnet0
+/bin/cp disable_internet_access_for_vboxnet0 \
+        /usr/local/bin/disable_internet_access_for_vboxnet0
 /bin/chown root:root /usr/local/bin/disable_internet_access_for_vboxnet0
 /bin/chmod 755 /usr/local/bin/disable_internet_access_for_vboxnet0
 
