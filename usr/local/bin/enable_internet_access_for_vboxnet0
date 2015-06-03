@@ -1,32 +1,68 @@
 #!/bin/bash
 #===============================================================================
-# FILE:         /usr/local/bin/enable_internet_access_for_vboxnet0
+# DIRECTORY:
+#   /usr/local/bin/
+# FILE:
+#   enable_internet_access_for_vboxnet0
 #
-# USAGE:        # enable_internet_access_for_vboxnet0
-#   OR          $ sudo enable_internet_access_for_vboxnet0
-# OPTIONS:      none
+# USAGE:
+#   # enable_internet_access_for_vboxnet0
+# OR
+#   $ sudo enable_internet_access_for_vboxnet0
 #
-# DESCRIPTION:  Add all necessary firewall rules for a default virtualbox
-#                 host-only interface (vboxnet0) with default settings
-#                 (192.168.56.0/24) incl. activating ip forwarding on the host.
-#                 In the case of a plurality of available network interfaces,
-#                 the first is selected with access to the internet
-#                 (hopefully the right one!?).
+# OPTIONS:
+#   none
 #
-# REQUIREMENTS: coreutils (id and echo), grep, sed, iproute2 (ip), gawk or mawk,
-#                 iputils-ping and iptables
-# BUGS:         ---
-# NOTES:        ---
-# AUTHOR:       Patrick Neumann, patrick@neumannsland.de
-# COMPANY:      (privately)
+# DESCRIPTION:
+#   Add all necessary firewall rules for a default virtualbox
+#   host-only interface (vboxnet0) with default settings
+#   (192.168.56.0/24) incl. activating ip forwarding on the host.
+#   In the case of a plurality of available network interfaces,
+#   the first is selected with access to the internet
+#   (hopefully the right one!?).
 #
-# VERSION:      0.6 (beta)
-# CREATED:      27.05.2015
+# REQUIREMENTS:
+#   coreutils (id and echo), grep, sed, iproute2 (ip), gawk or mawk,
+#   iputils-ping and iptables
 #
-# COPYRIGHT:    ---
-# LICENSE:	---
+# BUGS:
+#   ---
 #
-# HISTORY:      0.6 - Patrick Neumann - Initial release
+# NOTES:
+#   ---
+#
+# AUTHOR:
+#   Patrick Neumann, patrick@neumannsland.de
+#
+# COMPANY:
+#   (privately)
+#
+# VERSION:
+#   0.6 (beta)
+#
+# CREATED:
+#   27.05.2015
+#
+# COPYRIGHT (C):
+#   2015 - Patrick Neumann
+#
+# LICENSE:
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+# WARRANTY:
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+# HISTORY:
+#   0.6 - Patrick Neumann - Initial release
 #===============================================================================
 
 #=== FUNCTION ==================================================================
