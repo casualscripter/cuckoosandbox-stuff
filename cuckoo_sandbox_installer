@@ -410,6 +410,15 @@ fi
 /usr/bin/VBoxManage hostonlyif create
 /usr/bin/VBoxManage hostonlyif ipconfig vboxnet0 --ip 192.168.56.1
 
+/bin/sed --in-place '/exit 0/d' /etc/rc.local
+/bin/cat <<EOF >> /etc/rc.local
+if ! /sbin/ip addr show dev vboxnet0 | /bin/grep --fixed-strings "192.168.56.1" > /dev/null 2>&1 ; then
+  /usr/bin/VBoxManage hostonlyif ipconfig vboxnet0 --ip 192.168.56.1
+fi
+
+exit 0
+EOF
+
 #-------------------------------------------------------------------------------
 # Download and install "our" firewall scripts.
 #-------------------------------------------------------------------------------
