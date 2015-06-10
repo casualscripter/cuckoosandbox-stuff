@@ -205,7 +205,7 @@ done
                           --assume-yes
 
 case "${SUITE}" in
-  "jessy" )
+  "jessie" )
     /usr/bin/aptitude install libjpeg62-turbo-dev \
                               ssdeep \
                               --assume-yes
