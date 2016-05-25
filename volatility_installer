@@ -1,0 +1,319 @@
+#!/bin/bash
+#===============================================================================
+# DIRECTORY:
+#   ---
+#
+# FILE:
+#   ./volatility_installer
+#
+# USAGE:
+#   $ sudo ./volatility_installer
+# OR
+#   $ sudo su
+#   # ./volatility_installer
+#
+# OPTIONS:
+#   none
+#
+# DESCRIPTION:
+#   Automate the installation of "Volatility" (incl. deps).
+#   (https://github.com/volatilityfoundation/volatility/wiki/Installation)
+#
+# REQUIREMENTS:
+#   ...
+#
+# BUGS:
+#   ---
+#
+# NOTES:
+#   Tested on Debian8 (and maybe Ubuntu14.04).
+#
+# AUTHOR:
+#   Patrick Neumann, patrick@neumannsland.de
+#
+# COMPANY:
+#   (privately)
+#
+# VERSION:
+#   0.6 (beta)
+#
+# LINK TO THE MOST CURRENT VERSION:
+#   https://raw.githubusercontent.com/casualscripter/cuckoosandbox-stuff/master/volatility_installer
+#
+#
+# CREATED:
+#   14.05.2016
+#
+# COPYRIGHT (C):
+#   2016 - Patrick Neumann
+#
+# LICENSE:
+#   This program is free software: you can redistribute it and/or modify
+#   it under the terms of the GNU General Public License as published by
+#   the Free Software Foundation, either version 3 of the License, or
+#   (at your option) any later version.
+#
+# WARRANTY:
+#   This program is distributed in the hope that it will be useful,
+#   but WITHOUT ANY WARRANTY; without even the implied warranty of
+#   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+#   GNU General Public License for more details.
+#
+#   You should have received a copy of the GNU General Public License
+#   along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+# HISTORY:
+#   0.6 - Patrick Neumann - Initial (public) release
+#===============================================================================
+
+#=== FUNCTION ==================================================================
+# NAME: error_exit
+# DESCRIPTION: Display red error messages surrounded by "Error" and "EXITING".
+# PARAMETER 1: message (string)
+#===============================================================================
+function error_exit () {
+  /bin/echo -e "\033[01;31;40mError: ${1} . . . EXITING ! ! !\033[00m"
+  exit 1
+}
+
+#-------------------------------------------------------------------------------
+# Check for root privileges.
+#-------------------------------------------------------------------------------
+if [[ 0 -ne "$( /usr/bin/id --user )" ]] ; then
+  error_exit "you need to be root"
+fi
+
+#=== FUNCTION ==================================================================
+# NAME: error
+# DESCRIPTION: Display red error messages starting with "Error".
+# PARAMETER 1: message (string)
+#===============================================================================
+function error () {
+  /bin/echo -e "\033[01;31;40mError: ${1}!\033[00m"
+}
+
+#=== FUNCTION ==================================================================
+# NAME: hint
+# DESCRIPTION: Display yellow hint messages starting with "Hint:".
+# PARAMETER 1: message (string)
+#===============================================================================
+function hint () {
+  /bin/echo -e "\033[01;33;40mHint: ${1}.\033[00m"
+}
+
+#=== FUNCTION ==================================================================
+# NAME: success
+# DESCRIPTION: Display green success messages with an ending "!".
+# PARAMETER 1: message (string)
+#===============================================================================
+function success () {
+  /bin/echo -e "\033[01;32;40m${1}!\033[00m"
+}
+
+#-------------------------------------------------------------------------------
+# Check, for Debian GNU/Linux 8 (jessie) or Ubuntu 14.04 LTS
+#   and define constants if needed.
+#-------------------------------------------------------------------------------
+if [ ! -f "/etc/os-release" ] ; then
+  error_exit "sorry, your distribution is not supported"
+fi
+source <( /bin/grep --fixed-strings \
+                    --regexp="ID=" \
+                    --regexp="VERSION_ID=" \
+                    --regexp="PRETTY_NAME=" \
+                    /etc/os-release \
+          | /bin/sed "s/^/OR_/" )
+case "${OR_ID}${OR_VERSION_ID}" in
+  "debian8" )
+    readonly SUITE="jessie"
+    ;;
+  "ubuntu14.04" )
+    readonly SUITE="trusty"
+    ;;
+  * )
+    error_exit "sorry, ${OR_PRETTY_NAME} is not supported"
+esac
+
+#-------------------------------------------------------------------------------
+# Resynchronize the package index files from their sources.
+#-------------------------------------------------------------------------------
+/usr/bin/apt-get update
+
+#-------------------------------------------------------------------------------
+# The mother (Debian GNU/Linux) prefer "aptitude" over "apt-get".
+#-------------------------------------------------------------------------------
+if [ ! -x "/usr/bin/aptitude" ] ; then
+  /usr/bin/apt-get install aptitude --assume-yes
+fi
+
+#-------------------------------------------------------------------------------
+# Keep the system up to date and clean.
+#-------------------------------------------------------------------------------
+/usr/bin/aptitude full-upgrade
+/usr/bin/aptitude autoclean
+/usr/bin/dpkg --get-selections \
+  | /bin/grep deinstall \
+  | /usr/bin/awk '{ print $1; }' \
+  | /usr/bin/xargs /usr/bin/aptitude purge --assume-yes
+if [ ! -x "/usr/bin/deborphan" ] ; then
+  /usr/bin/aptitude install deborphan --assume-yes
+fi
+while REDUNDANT="$( /usr/bin/deborphan )" ; /usr/bin/test -n "${REDUNDANT}" ; do
+  /usr/bin/aptitude purge "${REDUNDANT}" --assume-yes
+done
+
+#-------------------------------------------------------------------------------
+# Install basic deps.
+#-------------------------------------------------------------------------------
+/usr/bin/aptitude install python-dev \
+                          python-pip \
+													pcregrep \
+													libpcre++-dev \
+                          --assume-yes
+
+#-------------------------------------------------------------------------------
+# Install Distorm3.
+#-------------------------------------------------------------------------------
+/usr/bin/pip install distorm3
+
+#-------------------------------------------------------------------------------
+# Install "Yara" and "Yara-Python".
+#-------------------------------------------------------------------------------
+/usr/bin/aptitude install autoconf \
+                          libtool \
+                          libjansson-dev \
+													libmagic-dev \
+                          --assume-yes
+
+/bin/mkdir --parents ~/Downloads/Yara
+cd ~/Downloads/Yara
+/usr/bin/wget https://github.com/plusvic/yara/archive/v3.4.0.tar.gz
+/bin/tar --extract \
+         --gunzip \
+         --file v3.4.0.tar.gz
+cd yara-3.4.0
+./bootstrap.sh
+./configure --enable-cuckoo \
+            --enable-magic
+/usr/bin/make
+/usr/bin/make install
+/sbin/ldconfig
+
+cd yara-python
+/usr/bin/python setup.py build
+/usr/bin/python setup.py install
+
+if /usr/bin/python tests.py > /dev/null 2>&1 ; then
+  success "Yara and Yara-Python has been successfully installed"
+else
+  error_exit "during the installation of Yara and/or Yara-Python has been an error"
+fi
+
+#-------------------------------------------------------------------------------
+# Install PyCrypto.
+#-------------------------------------------------------------------------------
+/usr/bin/pip install pycrypto
+
+#-------------------------------------------------------------------------------
+# Install PIL.
+#-------------------------------------------------------------------------------
+/usr/bin/aptitude install libfreetype6-dev \
+                          --assume-yes
+
+case "${SUITE}" in
+  "jessie" )
+    /usr/bin/aptitude install libjpeg62-turbo-dev \
+                              --assume-yes
+
+    /bin/mkdir --parents ~/Downloads/Lcms1
+    cd ~/Downloads/Lcms1
+    /usr/bin/wget http://vorboss.dl.sourceforge.net/project/lcms/lcms/1.19/lcms-1.19.tar.gz
+    /bin/tar --extract \
+             --gunzip \
+             --file lcms-1.19.tar.gz
+    cd lcms-1.19
+    ./configure
+    /usr/bin/make
+    /usr/bin/make install
+    /sbin/ldconfig
+    ;;
+  "trusty" )
+    /usr/bin/aptitude install libjpeg62-dev \
+                              liblcms1-dev \
+                             --assume-yes
+esac
+
+/bin/ln -s /usr/include/freetype2 /usr/include/freetype
+
+/bin/mkdir --parents ~/Downloads/PIL
+cd ~/Downloads/PIL
+/usr/bin/wget http://effbot.org/downloads/Imaging-1.1.7.tar.gz
+/bin/tar --extract \
+         --gunzip \
+         --file Imaging-1.1.7.tar.gz
+cd Imaging-1.1.7
+/bin/sed --in-place \
+         's/JPEG_ROOT = None/JPEG_ROOT = "\/usr\/lib\/x86_64-linux-gnu", "\/usr\/include"/' \
+         setup.py
+/bin/sed --in-place \
+         's/ZLIB_ROOT = None/ZLIB_ROOT = "\/usr\/lib\/x86_64-linux-gnu", "\/usr\/include"/' \
+         setup.py
+/bin/sed --in-place \
+         's/TIFF_ROOT = None/TIFF_ROOT = "\/usr\/lib\/x86_64-linux-gnu", "\/usr\/include"/' \
+         setup.py
+/bin/sed --in-place \
+         's/FREETYPE_ROOT = None/FREETYPE_ROOT = "\/usr\/lib\/x86_64-linux-gnu", "\/usr\/include"/' \
+         setup.py
+/bin/sed --in-place \
+         's/LCMS_ROOT = None/LCMS_ROOT = "\/usr\/local\/lib", "\/usr\/local\/include"/' \
+         setup.py
+/usr/bin/python setup.py build
+/usr/bin/python setup.py install
+
+/usr/bin/python setup.py build_ext -i
+if /usr/bin/python selftest.py > /dev/null 2>&1 ; then
+  success "Python Imaging Library (PIL) has been successfully installed"
+else
+  error_exit "during the installation of Python Imaging Library (PIL) has been an error"
+fi
+
+#-------------------------------------------------------------------------------
+# Install OpenPyxl.
+#-------------------------------------------------------------------------------
+/usr/bin/pip install openpyxl
+
+#-------------------------------------------------------------------------------
+# Install ujson.
+#-------------------------------------------------------------------------------
+/usr/bin/pip install ujson
+
+#-------------------------------------------------------------------------------
+# Install pytz.
+#-------------------------------------------------------------------------------
+/usr/bin/pip install pytz
+
+#-------------------------------------------------------------------------------
+# Install IPython.
+#-------------------------------------------------------------------------------
+/usr/bin/aptitude install ipython \
+                          --assume-yes
+
+#-------------------------------------------------------------------------------
+# Install Volatility.
+#-------------------------------------------------------------------------------
+/bin/mkdir --parents ~/Downloads/Volatility
+cd ~/Downloads/Volatility
+/usr/bin/wget https://github.com/volatilityfoundation/volatility/archive/2.5.tar.gz
+/bin/tar --extract \
+         --gunzip \
+         --file 2.5.tar.gz
+cd volatility-2.5
+python setup.py install
+
+if /usr/local/bin/vol.py --info > /dev/null 2>&1 ; then
+  success "Volatility has been successfully installed"
+else
+  error_exit "during the installation of Volatility has been an error"
+fi
+
+exit 0
