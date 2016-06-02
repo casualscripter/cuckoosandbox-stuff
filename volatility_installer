@@ -149,7 +149,7 @@ fi
 #-------------------------------------------------------------------------------
 # Keep the system up to date and clean.
 #-------------------------------------------------------------------------------
-/usr/bin/aptitude full-upgrade
+/usr/bin/aptitude full-upgrade --assume-yes
 /usr/bin/aptitude autoclean
 /usr/bin/dpkg --get-selections \
   | /bin/grep deinstall \
@@ -158,8 +158,11 @@ fi
 if [ ! -x "/usr/bin/deborphan" ] ; then
   /usr/bin/aptitude install deborphan --assume-yes
 fi
+RUNS=1
 while REDUNDANT="$( /usr/bin/deborphan )" ; /usr/bin/test -n "${REDUNDANT}" ; do
   /usr/bin/aptitude purge "${REDUNDANT}" --assume-yes
+  if [ ${RUNS} -gt 3 ] ; then break fi
+  RUNS=$(( ${RUNS} + 1 ))
 done
 
 #-------------------------------------------------------------------------------
@@ -170,11 +173,21 @@ done
 													pcregrep \
 													libpcre++-dev \
                           --assume-yes
+if [ ${?} -eq 0 ] ; then
+  success "Installation of basic dependencies was successful"
+else
+	error_exit "Installation of basic dependencies failed"
+fi
 
 #-------------------------------------------------------------------------------
 # Install Distorm3.
 #-------------------------------------------------------------------------------
 /usr/bin/pip install distorm3
+if [ ${?} -eq 0 ] ; then
+  success "Installation of distorm3 was successful"
+else
+	error_exit "Installation of distorm3 failed"
+fi
 
 #-------------------------------------------------------------------------------
 # Install "Yara" and "Yara-Python".
@@ -213,6 +226,11 @@ fi
 # Install PyCrypto.
 #-------------------------------------------------------------------------------
 /usr/bin/pip install pycrypto
+if [ ${?} -eq 0 ] ; then
+  success "Installation of pycrypto was successful"
+else
+	error_exit "Installation of pycrypto failed"
+fi
 
 #-------------------------------------------------------------------------------
 # Install PIL.
@@ -281,22 +299,42 @@ fi
 # Install OpenPyxl.
 #-------------------------------------------------------------------------------
 /usr/bin/pip install openpyxl
+if [ ${?} -eq 0 ] ; then
+  success "Installation of openpyxl was successful"
+else
+	error_exit "Installation of openpyxl failed"
+fi
 
 #-------------------------------------------------------------------------------
 # Install ujson.
 #-------------------------------------------------------------------------------
 /usr/bin/pip install ujson
+if [ ${?} -eq 0 ] ; then
+  success "Installation of ujson was successful"
+else
+	error_exit "Installation of ujson failed"
+fi
 
 #-------------------------------------------------------------------------------
 # Install pytz.
 #-------------------------------------------------------------------------------
 /usr/bin/pip install pytz
+if [ ${?} -eq 0 ] ; then
+  success "Installation of pytz was successful"
+else
+	error_exit "Installation of pytz failed"
+fi
 
 #-------------------------------------------------------------------------------
 # Install IPython.
 #-------------------------------------------------------------------------------
 /usr/bin/aptitude install ipython \
                           --assume-yes
+if [ ${?} -eq 0 ] ; then
+  success "Installation of ipython was successful"
+else
+	error_exit "Installation of ipython failed"
+fi
 
 #-------------------------------------------------------------------------------
 # Install Volatility.
@@ -315,5 +353,7 @@ if /usr/local/bin/vol.py --info > /dev/null 2>&1 ; then
 else
   error_exit "during the installation of Volatility has been an error"
 fi
+
+read -p "Finish installation script with return!"
 
 exit 0
