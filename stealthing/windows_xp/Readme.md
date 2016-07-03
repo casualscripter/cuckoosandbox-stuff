@@ -1,6 +1,6 @@
 # stealth windows xp vm
 
-1. Host:
+## Host
 * install VirtualBox
 * create new VM
   * RAM > 2048 MB
@@ -11,7 +11,7 @@
 * copy ESPRIMOP910_DSDT.bin to VM directory
 * execute ESPRIMOP910_extern
 
-2. Guest:
+## Guest
 * install windows xp pro
 * "real" username without password
 * activate administrator without password
@@ -30,4 +30,5 @@
 * load fakedtsc.sys
 * take snapshot of the running VM
 
-DO NOT INSTALL GUEST ADDITIONS!
+## Hints
+* __DO NOT INSTALL GUEST ADDITIONS!__
