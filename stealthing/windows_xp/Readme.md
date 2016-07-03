@@ -32,6 +32,7 @@
 
 ## Hints
 * __DO NOT INSTALL GUEST ADDITIONS!__
+* check with [pafish](https://github.com/a0rtega/pafish)
 
 ## Cuckoo
 * install python 2.x
