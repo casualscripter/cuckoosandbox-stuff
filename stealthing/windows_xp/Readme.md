@@ -1,15 +1,15 @@
 # stealth windows xp vm
 
 Host:
-install VirtualBox
-create new VM
-- RAM > 2048 MB
-- HDD > 60 GB
-- min. 2 CPU
-- activate IO-APIC
-- host only network
-copy ESPRIMOP910_DSDT.bin to VM directory
-execute ESPRIMOP910_extern
+* install VirtualBox
+* create new VM
+  * RAM > 2048 MB
+  * HDD > 60 GB
+  * min. 2 CPU
+  * activate IO-APIC
+  * host only network
+* copy ESPRIMOP910_DSDT.bin to VM directory
+* execute ESPRIMOP910_extern
 
 Guest:
 install windows xp pro
